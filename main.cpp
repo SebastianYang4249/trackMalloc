@@ -5,20 +5,27 @@
 #include <new>
 #include <execinfo.h>
 #include <string>
-#include <iostream>
+#include <cxxabi.h>
 
 std::string addr_to_symbol( void *addr ) {
+	// int nptrs = backtrace(&addr, 1);
 	char **strings = backtrace_symbols(&addr, 1);
-	if ( strings == nullptr ) return "";
+	if ( strings == nullptr ) return "unknown";
 	std::string ret = strings[0];
 	free(strings);
 	size_t pos1 = ret.find('(');
 	size_t pos2 = ret.find(')');
-	if ( pos1 == std::string::npos )
-		return ret;
-	// return ret.substr(pos1+1, pos2 - pos1);
-	std::cout << "cout ret : " << ret << std::endl;
-	printf("printf ret : %s\n", ret);
+	if ( pos1 != std::string::npos ) {
+		size_t pos2 = ret.find('+', pos1);
+		if ( pos2 != std::string::npos ) {
+			ret = ret.substr(pos1+1, pos2 - pos1 - 1);
+			char *demangled = abi::__cxa_demangle(ret.data(), nullptr, nullptr, nullptr);
+			if ( demangled ) {
+				ret = demangled;
+				free(demangled);
+			}
+		}
+	}
 	return ret;
 }
 
@@ -63,7 +70,7 @@ void operator delete(void* ptr) noexcept {
 	enable = was_enable;
 }
 
-short *dummy() {
+short *dummy(int x) {
 	short *p3 = new short;
 	return p3;
 }
@@ -73,7 +80,7 @@ int main() {
 	int* p1 = new int;
 	short* p2 = new short;
 
-	dummy();
+	dummy(3);
 
 	delete p1;
 	// delete p2;
