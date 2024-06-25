@@ -1,0 +1,6 @@
+can hook new and delete in cpp
+and use symbol table to track where memory is leaked
+
+TO DO List:
+change to shared lib
+some C functions hook
